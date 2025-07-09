@@ -1,0 +1,101 @@
+<?xml version= "1.0"?>
+<robot name="rc_car" xmlns:xacro="http://ros.org/wiki/xacro">
+ 
+ <xacro:property name="ch_w" value="0.2"/>
+ <xacro:property name="ch_l" value="0.5"/>
+ <xacro:property name="ch_h" value="0.1"/>
+ <xacro:property name="wheel_pos_y" value="0.14"/>
+ <xacro:property name="wheel_dia" value="0.1215"/>
+
+ <material name="white">
+  <color rgba=".9 .9 .9 1"/>
+ </material>
+
+ <material name="black">
+  <color rgba="0.1 0.1 0.1 1"/>
+ </material>
+
+ <xacro:macro name="in_inert" params="mass">
+  <inertial>
+   <mass value="${mass}"/>
+   <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="0.0"/> 
+  </inertial>
+ </xacro:macro>
+ 
+
+ <link name="chassis">
+   <visual>  
+     <origin xyz="0 0 ${(wheel_dia/2)+.03}" rpy="0 0 0"/>
+     <geometry>
+       <mesh filename= "package://rc_car/meshes/Chassis.dae"/>
+     </geometry>
+      <material name="white"/>
+   </visual>
+   
+   <collision>
+     <origin xyz="0 0 ${(wheel_dia/2)+.03}" rpy="0 0 0"/>
+     <geometry>
+        <mesh filename= "package://rc_car/meshes/Chassis.dae"/>
+     </geometry>
+   </collision>
+   <xacro:in_inert mass="5"/>
+ </link>
+
+ <xacro:macro name="wheel" params="pos width ref_x ref_y">
+  <link name="${pos}_wheel">
+    <visual>
+      <geometry>
+       <mesh filename= "package://rc_car/meshes/Wheel.dae"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 ${radians(90)} "/>
+      <material name="black"/>
+    </visual>
+
+    <collision>
+      <geometry>
+       <mesh filename= "package://rc_car/meshes/Wheel.dae"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 ${radians(90)}"/>
+    </collision>
+    <xacro:in_inert mass="1"/>
+  </link>
+
+  <joint name="${pos}_wheel_to_chassis" type="continuous">
+    <axis xyz="0 1 0" rpy="0 0 0"/>
+    <parent link="chassis"/>
+    <child link="${pos}_wheel"/>
+    <origin xyz="${ref_x*wheel_pos_y} ${ref_y*(width+ch_w)/2} ${wheel_dia/2}" rpy="0 0 0"/>
+  </joint>
+ </xacro:macro>
+
+ <xacro:wheel pos="front_right" width=".03" ref_x="1.0" ref_y="-1.0"/>
+ <xacro:wheel pos="rear_right" width=".03" ref_x="-1.0" ref_y="-1.0"/>
+ <xacro:wheel pos="front_left" width=".03" ref_x="1.0" ref_y="1.0"/>
+ <xacro:wheel pos="rear_left" width=".03" ref_x="-1.0" ref_y="1.0"/>
+
+
+ <gazebo>
+  <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+    <leftJoint>rear_left_wheel_to_chassis</leftJoint>
+    <rightJoint>rear_right_wheel_to_chassis</rightJoint>
+    <robotBaseFrame>chassis</robotBaseFrame>
+    <wheelSeparation>${ch_w}</wheelSeparation>
+    <wheelDiameter>${wheel_dia}</wheelDiameter>
+    <commandTopic>cmd_vel</commandTopic>
+    <odometryTopic>odom</odometryTopic>
+    <odometryFrame>odom</odometryFrame>
+    <publishWheelJointState>true</publishWheelJointState>
+    <alwaysOn>true</alwaysOn>
+    <legacyMode>false</legacyMode>
+    <updateRate>40</updateRate>
+    <wheelTorque>5</wheelTorque>
+    <odometrySource>world</odometrySource>
+    <publishWheelTF>true</publishWheelTF>
+    <wheelAcceleration>0</wheelAcceleration>
+    <rosDebugLevel>na</rosDebugLevel>
+    <publishOdomTF>true</publishOdomTF>
+  </plugin>
+ </gazebo>
+
+</robot>
+
