@@ -1,41 +1,69 @@
-import rclpy
-from rclpy.node import Node
-from geometry_msgs.msg import Twist
-from nav_msgs.msg import Odometry
-# from tf.transformations import euler_from_quaternion
-import math
+import rclpy                                #ROS2 python client
+from rclpy.node import Node                 #Class for creating node
+from geometry_msgs.msg import Twist         #Msg definition for sending to /cmd_vel
+from nav_msgs.msg import Odometry           #Msg definition for parsing from /odom
+import math                                                     
 import time
-from custom_interfaces.srv import Homing
+from custom_interfaces.srv import Homing    #Custom service interface package
 
-class HomingServiceServer(Node):
+class HomingServiceServer(Node):            #Server node class
 
     def __init__(self):
-        super().__init__('homing_server')
+        #Initialize node 
+        super().__init__('homing_server')                  
         self.get_logger().info('Homing Server node started')
 
-        # Service init
-        self.homing_service = self.create_service(Homing, 'homing', self.homing_callback)
+        #Service init named homing, with service interface Homing.srv
+        self.homing_service = self.create_service(Homing, 'homing', self.homing_callback)  
         self.get_logger().info('Homing service is ready.')
 
-        # Publisher init
+        #Publisher to /cmd_vel for velcity control
         self.cmd_vel_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
 
-        # Subscriber init
+        #Subscriber to /odom for reading odometry data
         self.current_pose = None
         self.odom_subscription = self.create_subscription(Odometry,'odom',self.odom_callback,10)
 
-        # Homing parameters 
-        self.linear_speed = 0.2         # Max lin speed while homing
-        self.angular_speed = 0.5        # Max ang speed while homing
-        self.position_tolerance = 0.5  # acceptable error wrt position
-        self.yaw_tolerance = 0.5        # acceptable error wrt yaw 
-        self.update_rate_hz = 50        # Hz for control loop
-        self.rate = self.create_rate(self.update_rate_hz)
+        #Homing parameters 
+        self.target_x = 0.0             #Default homing: X
+        self.target_y = 0.05            #Default homing: Y
+        self.target_yaw = 0.0           #Default homing: Yaw
+        self.homing_active= False       #Flag to control homing
 
+        self.linear_speed = 1.2         #Max lin speed while homing
+        self.angular_speed = 0.5        #Max ang speed while homing
+        self.position_tolerance = 0.3   #Acceptable error wrt position
+        self.yaw_tolerance = 0.5        #Acceptable error wrt yaw 
+        self.update_rate_hz = 50        #Control loop frequency
 
+        #Call homing() at 50Hz with homing() being callback
+        self.timer = self.create_timer(1.0 / self.update_rate_hz, self.homing)
+
+    #Subscriber callback function
     def odom_callback(self, msg):
-        self.current_pose = msg.pose.pose
+        self.current_pose = msg.pose.pose          #Store current robot pose
 
+    #Service callback function    
+    def homing_callback(self, request, response):  
+        self.target_x = request.target_x           #Store target x,y,yaw in class attributes for further acccess
+        self.target_y = request.target_y
+        self.target_yaw = request.target_yaw
+        
+        #Sending service response in case /odom is not being published
+        if self.current_pose is None:               
+            response.success = False
+            response.message = "Odometry not published. Is simulation running?"
+            self.homing_active = False
+            return response
+
+        #Response if /odom is being published, start homing
+        self.homing_active = True  
+        response.success = True
+        response.message = "Homing started..."
+        self.get_logger().info(response.message)
+        return response
+
+    #Quaternion to euler conversion (https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Source_code_2)
     def quaternion_to_yaw(self, q):
         x, y, z, w = q.x, q.y, q.z, q.w
         siny_cosp = 2.0 * (w * z + x * y)
@@ -43,150 +71,74 @@ class HomingServiceServer(Node):
         yaw = math.atan2(siny_cosp, cosy_cosp)
         return yaw
 
+    #Stop robot motion
     def stop_robot(self):
         twist_msg = Twist()
         twist_msg.linear.x = 0.0
         twist_msg.angular.z = 0.0
         self.cmd_vel_publisher.publish(twist_msg)
-        self.rate.sleep()
 
+    #Get current pose only if pose is published
     def get_robot_pose(self):
-        rclpy.spin_once(self, timeout_sec=0.1)
         if self.current_pose is None:
             return None, None, None
-
         current_x = self.current_pose.position.x
         current_y = self.current_pose.position.y
         current_yaw = self.quaternion_to_yaw(self.current_pose.orientation)
-        
         return current_x, current_y, current_yaw
 
-    def homing_callback(self, request, response):  #Service callback function
-        target_x = request.target_x
-        target_y = request.target_y
-        target_yaw = request.target_yaw
+    #Main homing function triggered by the service
+    def homing(self):  
+        self.get_logger().info("Homing tick...")
+        
+        #Don't home unless flag is true
+        if not self.homing_active:
+            return
 
-        self.get_logger().info(f'Target: x={target_x:.2f}, y={target_y:.2f}, yaw={target_yaw:.2f} rad ({math.degrees(target_yaw):.1f} deg)')
+        self.get_logger().info(f'Target: x={self.target_x:.2f}, y={self.target_y:.2f}, yaw={self.target_yaw:.2f} rad')
+        twist_msg = Twist()  #Twist class object definition
 
-        twist_msg = Twist()
+        #Get current pose. If no pose received, send info on CLI.
+        current_x, current_y, current_yaw = self.get_robot_pose()
+        if current_x is None:
+            self.get_logger().info("No pose received. Is simulation running?")
+            self.stop_robot()
+            self.homing_active= False
+            return
 
-        #Align with target position vector
-        # while rclpy.ok():                                                   #If ROS still running
-        #     current_x, current_y, current_yaw = self.get_robot_pose()
-        #     if current_x is None:
-        #         response.success = False
-        #         response.message = "No pose during Step 1."
-        #         self.get_logger().error(response.message)
-        #         self.stop_robot()
-        #         return response
+        print(f"Current X: {current_x}, Current Y: {current_y}, Current Yaw: {current_yaw}")
 
-        #     print(f"Current X: {current_x}, Current Y: {current_y}, Current Yaw: {current_yaw}")
+        #X, Y distance of target from current pose, also minimum distance 
+        dx = self.target_x - current_x
+        dy = self.target_y - current_y
+        distance_to_target_pos = math.sqrt(dx**2 + dy**2)
 
-        #     dx = target_x - current_x
-        #     dy = target_y - current_y
-            
-        #     distance_to_target_pos = math.sqrt(dx**2 + dy**2)
-        #     if distance_to_target_pos < self.position_tolerance:
-        #         self.get_logger().info("Already at target position.")
-        #         break 
+        #Stop homing if the distance is within specified tolerance
+        if abs(distance_to_target_pos) < self.position_tolerance:
+            self.get_logger().info("Reached. Stopping...")
+            self.stop_robot()
+            self.homing_active= False
+            return
 
-        #     #Calculating current yaw and position vector yaw
-        #     angle_to_target_pos = math.atan2(dy, dx)
-        #     yaw_error = angle_to_target_pos - current_yaw
-        #     yaw_error = math.atan2(math.sin(yaw_error), math.cos(yaw_error))
+        #Set linear velocity proportional to distance. Cap it to a maximum value
+        twist_msg.linear.x = (dx/abs(dx))* min(self.linear_speed, distance_to_target_pos * 1.5)
 
-        #     if abs(yaw_error) < self.yaw_tolerance:
-        #         self.get_logger().info("Aligned to target position vector.")
-        #         self.stop_robot()
-        #         break
+        #Publish the velocity
+        self.cmd_vel_publisher.publish(twist_msg)
+        self.get_logger().info(f"Publishing Twist: linear.x={twist_msg.linear.x:.2f},")
 
-        #     twist_msg.linear.x = 0.0
-        #     twist_msg.angular.z = self.angular_speed * (1 if yaw_error > 0 else -1)
-        #     self.cmd_vel_publisher.publish(twist_msg)
-        #     self.rate.sleep()
-
-        # self.stop_robot()
-
-        #Move to target position
-
-        while True:
-            current_x, current_y, current_yaw = self.get_robot_pose()
-            if current_x is None:
-                response.success = False
-                response.message = "No pose during Step 2."
-                self.get_logger().error(response.message)
-                self.stop_robot()
-                return response
-
-            print(f"Current X: {current_x}, Current Y: {current_y}, Current Yaw: {current_yaw}")
-            dx = target_x - current_x
-            dy = target_y - current_y
-            distance_to_target_pos = math.sqrt(dx**2 + dy**2)
-
-            if abs(distance_to_target_pos) < self.position_tolerance:
-                self.get_logger().info("Reached. Stopping...")
-                self.stop_robot()
-                break
-
-            twist_msg.linear.x = -min(self.linear_speed, distance_to_target_pos * 1.0)
-            twist_msg.linear.x = -max(twist_msg.linear.x, 0.05) 
-
-            # # Keep re-aligning while moving
-            # angle_to_target_pos = math.atan2(dy, dx)
-            # yaw_error_during_move = angle_to_target_pos - current_yaw
-            # yaw_error_during_move = math.atan2(math.sin(yaw_error_during_move), math.cos(yaw_error_during_move)) # Normalize
-
-            # twist_msg.angular.z = self.angular_speed * yaw_error_during_move * 0.5 # Proportional angular correction
-            # twist_msg.angular.z = max(min(twist_msg.angular.z, self.angular_speed), -self.angular_speed) # Cap angular speed
-
-            self.cmd_vel_publisher.publish(twist_msg)
-            self.rate.sleep()
-        print("Loop exited phase 1")
-        self.stop_robot() 
-
-        # #Moving to target yaw set by user
-        # while rclpy.ok():
-        #     current_x, current_y, current_yaw = self.get_robot_pose()
-        #     if current_x is None:
-        #         response.success = False
-        #         response.message = "Lost robot pose during Phase 3."
-        #         self.get_logger().error(response.message)
-        #         self.stop_robot()
-        #         return response
-
-    
-        #     final_yaw_error = target_yaw - current_yaw
-        #     final_yaw_error = math.atan2(math.sin(final_yaw_error), math.cos(final_yaw_error)) # Normalize
-
-        #     if abs(final_yaw_error) < self.yaw_tolerance:
-        #         self.get_logger().info("Phase 3: Final yaw alignment achieved.")
-        #         self.stop_robot()
-        #         break # Exit Phase 3 loop
-
-        #     twist_msg.linear.x = 0.0
-        #     twist_msg.angular.z = self.angular_speed * (1 if final_yaw_error > 0 else -1)
-            
-        #     self.cmd_vel_publisher.publish(twist_msg)
-        #     self.rate.sleep()
-
-        # self.stop_robot()
-
-        response.success = True
-        response.message = f"Robot successfully homed to x={target_x:.2f}, y={target_y:.2f}, yaw={target_yaw:.2f}."
-        self.get_logger().info(response.message)
-        return response
-
+#ROS2 main function
 def main(args=None):
     rclpy.init(args=args)
-    homing_service_server = HomingServiceServer()
+    homing_service_server = HomingServiceServer()  #Create HomingServiceServer class object
     try:
-        rclpy.spin(homing_service_server)
+        rclpy.spin(homing_service_server)          #Keep the node running
     except KeyboardInterrupt:
-        pass
+        pass                                   
     finally:
-        homing_service_server.destroy_node()
+        homing_service_server.destroy_node()       #Destroy node on exit
         if rclpy.ok():
-            rclpy.shutdown()
+            rclpy.shutdown()                       #Shutdown ROS services if still running
 
 if __name__ == '__main__':
     main()

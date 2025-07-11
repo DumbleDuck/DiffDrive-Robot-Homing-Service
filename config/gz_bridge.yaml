@@ -1,4 +1,4 @@
-# gz topic published by the simulator core
+# gz topic published by the simulator core with respective message types for ROS and Gazebo. Direction specifies flow of information
 - ros_topic_name: "clock"
   gz_topic_name: "clock"
   ros_type_name: "rosgraph_msgs/msg/Clock"

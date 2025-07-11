@@ -7,12 +7,13 @@
   <maintainer email="mutant@todo.todo">mutant</maintainer>
   <license>TODO: License declaration</license>
 
-  <depend>rclpy</depend>
-  <depend>urdfdom_py</depend>
-  <depend>xacro</depend>
-  <depend>ros_gz_sim</depend>
-  <depend>nav_msgs</depend>
-  <depend>geometry_msgs</depend>
+  <depend>rclpy</depend>             <!--Python dependency-->
+  <depend>urdfdom_py</depend>        <!--URDF parser-->
+  <depend>xacro</depend>             <!--Xacro parser-->
+  <depend>ros_gz_sim</depend>        <!--Gazebo launch through ROS-->
+  <depend>nav_msgs</depend>          <!--For odometry message definition-->
+  <depend>geometry_msgs</depend>     <!--For twist commands for /cmd_vel-->
+  <depend>custom_interfaces</depend> <!-- Custom interface of service-->
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
@@ -22,11 +23,4 @@
   <export>
     <build_type>ament_python</build_type>
   </export>
-
-
-  <!--Added after-->
-  <buildtool_depend>ament_python</buildtool_depend>
-  <build_depend>rosidl_default_generators</build_depend>
-  <exec_depend>rosidl_default_runtime</exec_depend> 
-  <member_of_group>rosidl_interface_packages</member_of_group>
 </package>

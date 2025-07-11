@@ -95,7 +95,7 @@ gz sim empty.sdf                                          #Launch Gazebo with an
 ros2 launch skid_steer_robot robot_bringup.launch.py      #Launch robot: spawner, ros_gz bridge, state publisher, homing_server
            ⬇️
 Teleop using the keyboard only in the X-direction		  #Can be expanded to full homing with better odometry
-		   ⬇️
+           ⬇️
 ros2 service call /homing custom_interfaces/srv/Homing "{target_x: 0.0, target_y: 0.0, target_yaw: 0.0}"   #Call homing service with target position
            ⬇️
 gz topic --echo --topic /odom                             #Monitor odometry topic from Gazebo
@@ -108,13 +108,13 @@ gz topic --echo --topic /odom                             #Monitor odometry topi
 </p>
 
 ## ❓ Some questions:
-1. Why can't Homing() be used as a service callback function? 
+1. **Why can't Homing() be used as a service callback function?**   
 Ans: Services are intended for short horizon tasks as they are synchronous and block the service server. Using a long-running function as service callback can block the entire node, preventing it to process further requests which can make the program unresponsive.
 
-2. Why choose homing through services?
+2. **Why choose homing through services?**  
 Ans: The intent of this task is to show how services can be used as triggers for complex tasks. Besides, the relatively easy and quick homing algorithm employed doesn't need constant intervention and hence doesn't warrant using actions. The **most important** reason is to show user how long horizon task can block a server node when used as service callback. This scenario can easily be recreated in this modular code by simply renaming `homing()` to `homing_callback()` and storing the `request.target_x,y,yaw` as local variables rather than class attributes.
 
-3. Why only X homing?
+3. **Why only X homing?**  
 Ans: The odometry data published by differential drive plugin is based on the physical model description of the robot and transforms between the chassis and the wheel. When moving in a straight line, it is quite reliable. However, due to wheel slipping while turning, it can report erroneous values. As this algorithm is highly sensitive to position feedback, it can cause the homing() function to enter an infinite loop. Hence, a much more robust source of odometry data (such as IMU, GPS, Ground Truth Position Plugin) is needed to perform complete homing. 
 Once a reliable source of odometry is guaranteed, homing is fairly easy: aligning the yaw with the vector between current position and target position -> moving straight along the position vector until position tolerance is reached -> aligning back to target yaw.   
 
