@@ -51,7 +51,7 @@ ros2_ws/
 ## 🔌 Defining a service interface:
 1. Clone the custom interfaces repo in `ros_ws/src` by doing `git clone https://github.com/DumbleDuck/custom_interfaces.git`.
 
-2. `.srv` file: Just like topics, to communicate over a service we need a service definition. Services have types that describe how requests and responses are structured. This package uses a service of type [`custom_interfaces/srv/Homing`](https://github.com/DumbleDuck/custom_interfaces) and is defined as follows:
+2. `.srv` file: Just like topics, to communicate over a service we need a service definition. Services have types that describe how requests and responses are structured. This package uses a service of type [`custom_interfaces/srv/Homing`](https://github.com/DumbleDuck/custom_interfaces/tree/main/srv) and is defined as follows:
 ```
 # Request
 float64 target_x
@@ -76,7 +76,7 @@ ament_export_dependencies(rosidl_default_runtime)  #Exports the runtime dependen
 
 
 ## 🖧 Creating a service server node:
-1. Clone the repository in `ros2_ws/src` by doing `https://github.com/DumbleDuck/DiffDrive-Robot-Homing-Service.git`. Rename the folder to skid_steer_robot
+1. Clone the repository in `ros2_ws/src` by doing `https://github.com/DumbleDuck/DiffDrive-Robot-Homing-Service.git`. Rename the folder to skid_steer_robot.
 
 2. Adding interface dependency in `package.xml`: The interface is ready and we can use it in the service server. But before that, we need to add custom interfaces as a dependency so that it can be imported as a package like this `<depend>custom_interfaces</depend>`. Purpose of other dependencies is commented in the file itself.
 
