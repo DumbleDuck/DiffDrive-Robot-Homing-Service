@@ -12,7 +12,7 @@ Services can be considered analogous to topics. Unlike topics, which work on con
   Teleoperation and service call when /odom not publishing
 </p>
 
-This ROS 2 package simulates a differential drive robot modeled in CAD and described using a URDF. The robot uses a diff drive plugin and is launched in Gazebo, with ROS 2 communication handled through ros_gz_bridge, configured via a YAML file. The robot can be manually teleoperated through Gazebo UI. The odometry is handled by the differential drive plugin through wheel joint states and robot_state_publisher estimates current pose and velocities. Highlight of this package is the homing_server node, which exposes a custom ROS 2 service that allows users to command the robot to home to a specified (x, y, yaw) pose. The service checks for odometry data before initiating movement. If no data is received, it safely returns false, preventing unintended motion. This project demonstrates the use of custom service interfaces and synchronous service-client communication in ROS 2. The rqt_graph is given below:
+This ROS 2 package simulates a differential drive robot modeled in CAD and described using a URDF. The robot uses a diff drive plugin and is launched in Gazebo, with ROS 2 communication handled through ros_gz_bridge, configured via a YAML file. The robot can be manually teleoperated through Gazebo UI. The odometry is handled by the differential drive plugin through wheel joint states and robot_state_publisher publishes transforms used for estimating current pose and velocities. Highlight of this package is the homing_server node, which exposes a custom ROS 2 service that allows users to command the robot to home to a specified (x, y, yaw) pose. The service checks for odometry data before initiating movement. If no data is received, it safely returns false, preventing unintended motion. This project demonstrates the use of custom service interfaces and synchronous service-client communication in ROS 2. The rqt_graph is given below:
 
 <p align="center">
   <img src="media/rqt_graph.png" alt="rqt graph" width="600"/>
@@ -49,9 +49,9 @@ ros2_ws/
 ```
 
 ## 🔌 Defining a service interface:
-1. Clone the custom interfaces repo in `ros_ws/src` by doing `git clone https://github.com/DumbleDuck/custom_interfaces.git`
+1. Clone the custom interfaces repo in `ros_ws/src` by doing `git clone https://github.com/DumbleDuck/custom_interfaces.git`.
 
-2. `.srv` file: Just like topics, to communicate over a service we need a service definition. Services have types that describe how requests and responses are structured. This package uses a service of type `custom_interfaces/srv/Homing` and is defined as follows:
+2. `.srv` file: Just like topics, to communicate over a service we need a service definition. Services have types that describe how requests and responses are structured. This package uses a service of type [`custom_interfaces/srv/Homing`](https://github.com/DumbleDuck/custom_interfaces) and is defined as follows:
 ```
 # Request
 float64 target_x
