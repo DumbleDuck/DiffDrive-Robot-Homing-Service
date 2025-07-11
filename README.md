@@ -12,7 +12,12 @@ Services can be considered analogous to topics. Unlike topics, which work on con
   Teleoperation and service call when /odom not publishing
 </p>
 
-This ROS 2 package simulates a differential drive robot modeled in CAD and described using a URDF. The robot uses a diff drive plugin and is launched in Gazebo, with ROS 2 communication handled through ros_gz_bridge, configured via a YAML file. The robot can be manually teleoperated through Gazebo UI. Highlight of this package is the homing_server node, which exposes a custom ROS 2 service that allows users to command the robot to home to a specified (x, y, yaw) pose. The service checks for odometry data before initiating movement. If no data is received, it safely returns false, preventing unintended motion. This project demonstrates the use of custom service interfaces and synchronous service-client communication in ROS 2.
+This ROS 2 package simulates a differential drive robot modeled in CAD and described using a URDF. The robot uses a diff drive plugin and is launched in Gazebo, with ROS 2 communication handled through ros_gz_bridge, configured via a YAML file. The robot can be manually teleoperated through Gazebo UI. Highlight of this package is the homing_server node, which exposes a custom ROS 2 service that allows users to command the robot to home to a specified (x, y, yaw) pose. The service checks for odometry data before initiating movement. If no data is received, it safely returns false, preventing unintended motion. This project demonstrates the use of custom service interfaces and synchronous service-client communication in ROS 2. Below is the rqt_graph when the all the nodes are running:
+
+<p align="center">
+  <img src="media/rqt_graph.png" alt="rqt graph" width="600"/>
+  rqt_graph. Services are not shown.
+</p>
 
 ## 📁 Folder Structure
 ```
@@ -45,7 +50,7 @@ ros2_ws/
 ```
 
 ## 🔌 Defining a service interface:
-1. Clone the custom interfaces repo in `ros_ws/src` by doing `git clone ..`
+1. Clone the custom interfaces repo in `ros_ws/src` by doing `git clone https://github.com/DumbleDuck/custom_interfaces.git`
 
 2. `.srv` file: Just like topics, to communicate over a service we need a service definition. Services have types that describe how requests and responses are structured. This package uses a service of type `custom_interfaces/srv/Homing` and is defined as follows:
 ```
@@ -94,7 +99,7 @@ gz sim empty.sdf                                          #Launch Gazebo with an
            ⬇️
 ros2 launch skid_steer_robot robot_bringup.launch.py      #Launch robot: spawner, ros_gz bridge, state publisher, homing_server
            ⬇️
-Teleop using the keyboard only in the X-direction		  #Can be expanded to full homing with better odometry
+Teleop using the keyboard only in the X-direction         #Can be expanded to full homing with better odometry
            ⬇️
 ros2 service call /homing custom_interfaces/srv/Homing "{target_x: 0.0, target_y: 0.0, target_yaw: 0.0}"   #Call homing service with target position
            ⬇️
@@ -109,13 +114,14 @@ gz topic --echo --topic /odom                             #Monitor odometry topi
 
 ## ❓ Some questions:
 1. **Why can't Homing() be used as a service callback function?**   
-Ans: Services are intended for short horizon tasks as they are synchronous and block the service server. Using a long-running function as service callback can block the entire node, preventing it to process further requests which can make the program unresponsive.
+**Ans:** Services are intended for short horizon tasks as they are synchronous and block the service server. Using a long-running function as service callback can [block the entire thread](https://docs.ros.org/en/iron/How-To-Guides/Sync-Vs-Async.html), preventing it to process further requests which can make the program unresponsive.
 
 2. **Why choose homing through services?**  
-Ans: The intent of this task is to show how services can be used as triggers for complex tasks. Besides, the relatively easy and quick homing algorithm employed doesn't need constant intervention and hence doesn't warrant using actions. The **most important** reason is to show user how long horizon task can block a server node when used as service callback. This scenario can easily be recreated in this modular code by simply renaming `homing()` to `homing_callback()` and storing the `request.target_x,y,yaw` as local variables rather than class attributes.
+**Ans:** The intent of this task is to show how services can be used as triggers for complex tasks. Besides, the relatively easy and quick homing algorithm employed doesn't need constant intervention and hence doesn't warrant using actions. 
+The **most important** reason is to show users how long horizon task can block a server node when used as service callback. This scenario can easily be recreated in this modular code by renaming `homing()` to `homing_callback()` and storing the `request.target_x,y,yaw` as local variables rather than class attributes.
 
 3. **Why only X homing?**  
-Ans: The odometry data published by differential drive plugin is based on the physical model description of the robot and transforms between the chassis and the wheel. When moving in a straight line, it is quite reliable. However, due to wheel slipping while turning, it can report erroneous values. As this algorithm is highly sensitive to position feedback, it can cause the homing() function to enter an infinite loop. Hence, a much more robust source of odometry data (such as IMU, GPS, Ground Truth Position Plugin) is needed to perform complete homing. 
+**Ans:** The odometry data published by differential drive plugin is based on the physical model description of the robot and transforms between the chassis and the wheel. When moving in a straight line, it is quite reliable. However, due to wheel slipping while turning, it can report [erroneous values](https://robotics.stackexchange.com/questions/99374/understanding-how-odometry-is-calculated-in-the-diff-drive-controller). As this algorithm is highly sensitive to position feedback, it can cause the homing() function to enter an infinite loop. Hence, a much more robust source of odometry data (such as IMU, GPS, [Ground Truth Position Plugin](https://docs.ros.org/en/electric/api/gazebo_plugins/html/group__GazeboRosP3D.html)) is needed to perform complete homing. 
 Once a reliable source of odometry is guaranteed, homing is fairly easy: aligning the yaw with the vector between current position and target position -> moving straight along the position vector until position tolerance is reached -> aligning back to target yaw.   
 
 ---
