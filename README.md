@@ -63,7 +63,7 @@ float64 target_yaw
 bool success
 string message
 ```
-The response part defines data that needs to be sent when calling a service and response defines what data will be sent by our server.
+The request part defines data that needs to be sent by the client when calling a service and response defines what data will be sent by our server.
 
 3. CMake package dependencies: Service types are defined as a CMake package so they can be built and translated into real code. This is done when building a package and requires a translator. Hence the following commands are needed in `CMakeLists.txt`:
 ```

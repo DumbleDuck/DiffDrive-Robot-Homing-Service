@@ -37,6 +37,7 @@
 
   <!-- Wheel Definition -->
   <!-- Calling Wheel Macro -->
+  <!--Front right wheel link: visual & collision definition-->
   <link name="front_right_wheel">
     <visual>
       <geometry>
@@ -56,6 +57,7 @@
       <inertia ixx="0.0002243658" ixy="0.0" ixz="0.0" iyy="0.00041873192200000004" iyz="0.0" izz="0.0002243658"/>
     </inertial>
   </link>
+  <!--Front right wheel joint coordinates though CAD-->
   <joint name="front_right_wheel_to_chassis" type="continuous">
     <axis rpy="0 0 0" xyz="0 1 0"/>
     <parent link="chassis"/>
@@ -66,7 +68,7 @@
     <material>Gazebo/Black</material>
   </gazebo>
   
-
+  <!--Rear right wheel link: visual & collision definition-->
   <link name="rear_right_wheel">
     <visual>
       <geometry>
@@ -86,6 +88,7 @@
       <inertia ixx="0.0002243658" ixy="0.0" ixz="0.0" iyy="0.00041873192200000004" iyz="0.0" izz="0.0002243658"/>
     </inertial>
   </link>
+  <!--Rear right wheel joint coordinates though CAD-->
   <joint name="rear_right_wheel_to_chassis" type="continuous">
     <axis rpy="0 0 0" xyz="0 1 0"/>
     <parent link="chassis"/>
@@ -96,7 +99,7 @@
     <material>Gazebo/Black</material>
   </gazebo>
   
-
+  <!--Front left wheel link: visual & collision definition-->
   <link name="front_left_wheel">
     <visual>
       <geometry>
@@ -116,6 +119,7 @@
       <inertia ixx="0.0002243658" ixy="0.0" ixz="0.0" iyy="0.00041873192200000004" iyz="0.0" izz="0.0002243658"/>
     </inertial>
   </link>
+  <!--Front left wheel joint coordinates though CAD-->
   <joint name="front_left_wheel_to_chassis" type="continuous">
     <axis rpy="0 0 0" xyz="0 1 0"/>
     <parent link="chassis"/>
@@ -126,7 +130,7 @@
     <material>Gazebo/Black</material>
   </gazebo>
   
-
+  <!--Rear left wheel link: visual & collision definition--> 
   <link name="rear_left_wheel">
     <visual>
       <geometry>
@@ -146,6 +150,7 @@
       <inertia ixx="0.0002243658" ixy="0.0" ixz="0.0" iyy="0.00041873192200000004" iyz="0.0" izz="0.0002243658"/>
     </inertial>
   </link>
+  <!--Rear left wheel joint coordinates though CAD-->
   <joint name="rear_left_wheel_to_chassis" type="continuous">
     <axis rpy="0 0 0" xyz="0 1 0"/>
     <parent link="chassis"/>
@@ -170,16 +175,16 @@
 
       <max_linear_acceleration>10</max_linear_acceleration>
 
-      <topic>cmd_vel</topic>         <!-- Topic over which commands are sent-->     
-      <odom_topic>odom</odom_topic>  <!-- Topic over which odometry data sent -->
-      <tf_topic>/tf</tf_topic>       <!-- Topic over which tf data sent -->
+      <topic>cmd_vel</topic>                                        <!-- Topic over which commands are sent-->     
+      <odom_topic>odom</odom_topic>                                 <!-- Topic over which odometry data sent -->
+      <tf_topic>/tf</tf_topic>                                      <!-- Topic over which tf data sent -->
 
-      <frame_id>odom</frame_id>      <!-- Frame_id field used as the origin of odometry transform -->
-      <child_frame_id>chassis</child_frame_id>
-      <odom_publisher_frequency>100</odom_publisher_frequency> <!-- Frequency of sending odometry data -->               
+      <frame_id>odom</frame_id>                                     <!-- Frame_id field used as the origin of odometry transform -->
+      <child_frame_id>chassis</child_frame_id>                      <!--frame_id that this system will use as the target of the odometry transform-->
+      <odom_publisher_frequency>100</odom_publisher_frequency>      <!-- Frequency of sending odometry data -->               
     </plugin>
 
-  <!-- Robot state publisher for selected joints -->
+  <!-- Robot state publisher for wheel joints -->
     <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
       <topic>joint_states</topic>
       <joint_name>front_left_wheel_to_chassis</joint_name>
