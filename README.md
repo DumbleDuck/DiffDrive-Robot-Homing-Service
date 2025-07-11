@@ -14,9 +14,9 @@ Services can be considered analogous to topics. Unlike topics, which work on con
 
 This ROS 2 package simulates a differential drive robot modeled in CAD and described using a URDF. The robot uses a diff drive plugin and is launched in Gazebo, with ROS 2 communication handled through ros_gz_bridge, configured via a YAML file. The robot can be manually teleoperated through Gazebo UI. Highlight of this package is the homing_server node, which exposes a custom ROS 2 service that allows users to command the robot to home to a specified (x, y, yaw) pose. The service checks for odometry data before initiating movement. If no data is received, it safely returns false, preventing unintended motion. This project demonstrates the use of custom service interfaces and synchronous service-client communication in ROS 2. Below is the rqt_graph when the all the nodes are running:
 
+
 <p align="center">
   <img src="media/rqt_graph.png" alt="rqt graph" width="600"/>
-  rqt_graph. Services are not shown.
 </p>
 
 ## 📁 Folder Structure
@@ -68,7 +68,7 @@ The response part defines data that needs to be sent when calling a service and 
 3. CMake package dependencies: Service types are defined as a CMake package so they can be built and translated into real code. This is done when building a package and requires a translator. Hence the following commands are needed in `CMakeLists.txt`:
 ```
 find_package(rosidl_default_generators REQUIRED)   #Defining the interface that changes .srv to real code
-rosidl_generate_interfaces(${PROJECT_NAME}		   #File to convert
+rosidl_generate_interfaces(${PROJECT_NAME}         #File to convert
   "srv/Homing.srv"
 )
 ament_export_dependencies(rosidl_default_runtime)  #Exports the runtime dependency
