@@ -12,11 +12,10 @@ Services can be considered analogous to topics. Unlike topics, which work on con
   Teleoperation and service call when /odom not publishing
 </p>
 
-<div style="text-align: justify"> 
 This ROS 2 package simulates a differential drive robot modeled in CAD and described using a URDF. The robot uses a diff drive plugin and is launched in Gazebo, with ROS 2 communication handled through ros_gz_bridge, configured via a YAML file. The robot can be manually teleoperated through Gazebo UI. The odometry is handled by the differential drive plugin through wheel joint states and robot_state_publisher estimates current pose and velocities. Highlight of this package is the homing_server node, which exposes a custom ROS 2 service that allows users to command the robot to home to a specified (x, y, yaw) pose. The service checks for odometry data before initiating movement. If no data is received, it safely returns false, preventing unintended motion. This project demonstrates the use of custom service interfaces and synchronous service-client communication in ROS 2. The rqt_graph is given below:
-</div>
 
 <p align="center">
+	<br>
   <img src="media/rqt_graph.png" alt="rqt graph" width="600"/>
 </p>
 
